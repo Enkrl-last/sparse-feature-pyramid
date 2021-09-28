@@ -13,9 +13,10 @@ class BaseLightningModule(pl.LightningModule):
     def __init__(self, parameters):
         super().__init__()
         self.save_hyperparameters(parameters)
+        self._figure_reporter = None
 
-    def loss(self, batch):
-        raise NotImplementedError()
+    def set_figure_reporter(self, figure_reporter):
+        self._figure_reporter = figure_reporter
 
     def metrics(self):
         return {}
@@ -49,8 +50,20 @@ class BaseLightningModule(pl.LightningModule):
         for key, value in losses.items():
             logged_losses[f"{prefix}_{key}"] = value
         self.log_dict(logged_losses)
+        if self.need_report_figures(batch_index, prefix):
+            self.report_figures(batch, output)
         return losses["loss"]
 
+    def loss(self, batch):
+        raise NotImplementedError()
+
+    def need_report_figures(self, batch_index, prefix):
+        return (self._figure_reporter is not None) and (batch_index == 0) and (prefix == "val")
+
+    def report_figures(self, batch, output):
+        pass
+
+    # noinspection PyUnresolvedReferences
     def configure_optimizers(self):
         if "betas" in self.hparams.optimizer.keys():
             beta1 = float(self.hparams.optimizer.betas.split(" ")[0])
@@ -61,4 +74,3 @@ class BaseLightningModule(pl.LightningModule):
             scheduler = torch.optim.lr_scheduler.StepLR(optimizer, **self.hparams.scheduler)
             return [optimizer], [scheduler]
         return optimizer
-

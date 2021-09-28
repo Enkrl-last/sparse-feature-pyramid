@@ -141,3 +141,5 @@ class SparseFeaturePyramidAutoencoder(BaseLightningModule):
             loss = loss + torch.sum(probability * feature_dimension) / batch_size
         return loss
 
+    def report_figures(self, batch, output):
+        self._figure_reporter.report_figures(batch["image"], output[0][0], output[2], output[3], self.global_step)
