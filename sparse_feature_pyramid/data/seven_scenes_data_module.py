@@ -3,11 +3,11 @@ import torch.utils.data
 import albumentations
 import albumentations.pytorch
 import cv2
-from .seven_scenes import SevenScenes
+from .concat_seven_scenes import ConcatSevenScenes
 
 
 class SevenScenesDataModule(pl.LightningDataModule):
-    def __init__(self, scene, root_dataset_path, batch_size=128, num_workers=4, seed=0,
+    def __init__(self, scenes, root_dataset_path, batch_size=128, num_workers=4, seed=0,
                  image_size=256, random_jitter=False, random_rotation=False, center_crop=False):
         super().__init__()
         torch.random.manual_seed(seed)
@@ -20,11 +20,15 @@ class SevenScenesDataModule(pl.LightningDataModule):
         self._center_crop = center_crop
         self._batch_size = batch_size
         self._num_workers = num_workers
+        if isinstance(scenes, str):
+            scenes = [scenes]
 
         train_image_transform = self.make_train_image_transform()
         test_image_transform = self.make_test_image_transform()
-        self._train_dataset = SevenScenes(scene, root_dataset_path, train=True, image_transform=train_image_transform)
-        self._test_dataset = SevenScenes(scene, root_dataset_path, train=False, image_transform=test_image_transform)
+        self._train_dataset = ConcatSevenScenes(scenes, root_dataset_path, train=True,
+                                                image_transform=train_image_transform)
+        self._test_dataset = ConcatSevenScenes(scenes, root_dataset_path, train=False,
+                                               image_transform=test_image_transform)
         print(f"[ToyDataModule] - train subset size {len(self._train_dataset)}")
         print(f"[ToyDataModule] - validation dataset size {len(self._test_dataset)}")
 

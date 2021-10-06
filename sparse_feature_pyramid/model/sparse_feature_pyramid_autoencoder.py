@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.nn.functional
 import torch
 import numpy as np
-
+from kapture_localization.matching.matching import MatchPairNnTorch
 
 def mean(x):
     return sum(x) / len(x)
