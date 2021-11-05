@@ -7,6 +7,7 @@ import torch
 import numpy as np
 from kapture_localization.matching.matching import MatchPairNnTorch
 
+
 def mean(x):
     return sum(x) / len(x)
 
@@ -83,7 +84,7 @@ class SparseFeaturePyramidAutoencoder(BaseLightningModule):
             mask, probability = self.predict_mask(log_prob)
             masks.append(mask)
             probabilities.append(probability)
-            kl_losses.append(self.predict_kl_loss(log_prob))
+            kl_losses.append(self.hparams.kl_loss_coefficient * self.predict_kl_loss(log_prob))
         masked_feature_pyramid = [feature * mask for feature, mask in zip(feature_pyramid, masks)]
 
         x = masked_feature_pyramid[-1]
@@ -119,7 +120,7 @@ class SparseFeaturePyramidAutoencoder(BaseLightningModule):
         image_losses = [self.scaled_image_loss(input_image, output_image, mask) for output_image in output[0]]
         image_loss = mean(image_losses)
         size_loss = self.size_loss(output[3])
-        loss = image_loss + self.hparams.size_loss_koef * size_loss
+        loss = image_loss + self.hparams.size_loss_koef * size_loss  # ToDo
         kl_loss = mean([torch.mean(x) for x in output[4]])
         return output, {
             "loss": loss,

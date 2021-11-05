@@ -28,13 +28,26 @@ class SevenScenes(data.Dataset):
 
         self._color_images = []
         self._positions = []
+
+        try:
+            import google.colab
+            in_colab = True
+        except ImportError:
+            in_colab = False
+
         for sequence in sequences:
             sequence_directory = osp.join(base_directory, 'seq-{:02d}'.format(sequence))
-            if not osp.isdir(sequence_directory):
+            if in_colab:
+                extract_path = osp.join("/content/dataset/7scenes/", scene)
+                sequence_directory = osp.join(extract_path, 'seq-{:02d}'.format(sequence))
+                self.unzip_sequence(base_directory, extract_path, sequence)
+
+            elif not osp.isdir(sequence_directory):
                 print("[SevenScenes] - don't find sequence directory for sequence {} in directory {}".format(sequence,
                       sequence_directory))
                 print("[SevenScenes] - trying to unzip")
                 self.unzip_sequence(base_directory, sequence_directory, sequence)
+
             pose_filenames = [x for x in os.listdir(osp.join(sequence_directory)) if x.find('pose') >= 0]
             frame_indexes = np.arange(len(pose_filenames), dtype=np.int64)
             positions = [np.loadtxt(osp.join(sequence_directory, 'frame-{:06d}.pose.txt'.
