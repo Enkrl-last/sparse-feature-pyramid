@@ -120,7 +120,7 @@ class SparseFeaturePyramidAutoencoder(BaseLightningModule):
         image_losses = [self.scaled_image_loss(input_image, output_image, mask) for output_image in output[0]]
         image_loss = mean(image_losses)
         size_loss = self.size_loss(output[3])
-        loss = image_loss + self.hparams.size_loss_koef * size_loss  # ToDo
+        loss = image_loss + self.hparams.size_loss_koef * size_loss
         kl_loss = mean([torch.mean(x) for x in output[4]])
         return output, {
             "loss": loss,
