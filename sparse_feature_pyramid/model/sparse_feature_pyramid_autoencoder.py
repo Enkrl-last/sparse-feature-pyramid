@@ -78,13 +78,11 @@ class SparseFeaturePyramidAutoencoder(BaseLightningModule):
 
         masks = []
         probabilities = []
-        kl_losses = []
         for feature, convolution in zip(feature_pyramid, self._mask_convolutions):
             log_prob = convolution(feature)
             mask, probability = self.predict_mask(log_prob)
             masks.append(mask)
             probabilities.append(probability)
-            kl_losses.append(self.hparams.kl_loss_coefficient * self.predict_kl_loss(log_prob))
         masked_feature_pyramid = [feature * mask for feature, mask in zip(feature_pyramid, masks)]
 
         x = masked_feature_pyramid[-1]
@@ -92,7 +90,7 @@ class SparseFeaturePyramidAutoencoder(BaseLightningModule):
         for i in range(len(self._decoder_blocks)):
             x = self._decoder_blocks[i](x, masked_feature_pyramid[-i - 2])
             outputs.append(self._output_convolutions[-i - 2](x))
-        return list(reversed(outputs)), feature_pyramid, masks, probabilities, kl_losses
+        return list(reversed(outputs)), feature_pyramid, masks, probabilities
 
     def predict_mask(self, x):
         probability = torch.sigmoid(x)
@@ -121,13 +119,11 @@ class SparseFeaturePyramidAutoencoder(BaseLightningModule):
         image_loss = mean(image_losses)
         size_loss = self.size_loss(output[3]) / (input_image.shape[2] * input_image.shape[3]) / 3  # 3 is nimber of channels (RGB)
         loss = image_loss + self.hparams.size_loss_koef * size_loss
-        kl_loss = mean([torch.mean(x) for x in output[4]])
         return output, {
             "loss": loss,
             "image_loss": image_loss,
             "image_loss4": image_losses[4],
-            "size_loss": size_loss,
-            "kl_loss": kl_loss
+            "size_loss": size_loss
         }
 
     def scaled_image_loss(self, input_image, output_image, mask):
