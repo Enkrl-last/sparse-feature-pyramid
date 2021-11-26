@@ -5,7 +5,7 @@ from sparse_feature_pyramid.utils.clearml_figure_reporter import ClearmlFigureRe
 
 from clearml import Task, Logger
 
-import argparse
+from argparse import ArgumentParser
 import sys
 import pytorch_lightning as pl
 import os
@@ -22,23 +22,39 @@ import warnings
 warnings.filterwarnings('ignore')
 warnings.simplefilter('ignore')
 
-
 if __name__ == "__main__":
-    factory = UniversalFactory([SparseFeaturePyramidAutoencoder])
+    parser = ArgumentParser(description='Launch experiment sparse feature pyramid')
+    parser.add_argument('-batch_size', type=int, default=64, help='batch size')
+    parser.add_argument('-image_size', type=int, default=128, help='image size')
+    parser.add_argument('-scenes', default=1, type=int, help='number_of_scenes (1 - fire only, 7 - all scenes)')
+    parser.add_argument('-root_dataset_path', default="/home/ikalinov/sparce_feature_pyramid/dataset", help='path to dataset (from root)')
+    parser.add_argument('-feature_dimensions', default=[8, 16, 32, 64, 128], nargs="+", type=int, help='array for each layer')
+    parser.add_argument('-max_epochs', type=int, default=100, help='Number of epoch')
+    parser.add_argument('-checkpoint_every_n_val_epochs', type=int, default=10, help='Chekpoint each N epoch')
+    args = parser.parse_args()
 
-    task = Task.init(project_name="sparse-feature-pyramid", task_name="Sparse feature pyramid on local machine",
+    if args.scenes == 1:
+        scenes=['fire']
+    elif args.scenes == 7:
+        scenes=["fire", "chess", "pumpkin", "stairs", "heads", "office", "redkitchen"]
+    else:
+        print('Unexpected scenes, choose 1 or 7')
+        sys.exit() 
+
+    factory = UniversalFactory([SparseFeaturePyramidAutoencoder])
+    task = Task.init(project_name="sparse-feature-pyramid", task_name="Sparse feature pyramid on server",
                      auto_connect_frameworks={'matplotlib': False, 'tensorflow': True, 'tensorboard': True,
                                               'pytorch': True, 'xgboost': True, 'scikit': True, 'fastai': True,
                                               'lightgbm': True, 'hydra': True})
     data_module_parameters = {
-        "batch_size": 64,
+        "batch_size": args.batch_size,
         "num_workers": 4,
-        "image_size": 128,
-        "scenes": ["fire"],  # , "chess", "pumpkin", "stairs", "heads", "office", "redkitchen"],
+        "image_size": args.image_size,
+        "scenes": scenes,
         "center_crop": True,
         "random_jitter": True,
         "random_rotation": True,
-        "root_dataset_path": "/home/andrei/media/7scenes"
+        "root_dataset_path": args.root_dataset_path
     }
 
     task.connect(data_module_parameters)
@@ -48,10 +64,9 @@ if __name__ == "__main__":
     model_parameters = AttributeDict(
         name="SparseFeaturePyramidAutoencoder",
         optimizer=AttributeDict(),
-        feature_dimensions=[8, 16, 32, 64, 128],
-        size_loss_koef=1 / 500000.,
-        input_dimension=3,
-        kl_loss_coefficient=0.5
+        feature_dimensions=args.feature_dimensions,
+        size_loss_koef=(args.image_size*args.image_size*3) * (1 / 500000.),
+        input_dimension=3
     )
     task.connect(model_parameters)
     model = factory.make_from_parameters(model_parameters)
@@ -59,8 +74,8 @@ if __name__ == "__main__":
 
     logger_path = os.path.join(os.path.dirname(task.cache_dir), "lightning_logs", "sparse_feature_pyramid")
     trainer_parameters = {
-        "max_epochs": 100,
-        "checkpoint_every_n_val_epochs": 10,
+        "max_epochs": args.max_epochs,
+        "checkpoint_every_n_val_epochs": args.checkpoint_every_n_val_epochs,
         "gpus": 1,
         "check_val_every_n_epoch": 2
     }

@@ -1,3 +1,6 @@
+# Model versions
+notebook/version*
+
 # Pacharm settings
 .idea/
 build
