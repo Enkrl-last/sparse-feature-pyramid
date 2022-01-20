@@ -99,8 +99,9 @@ class SparseFeaturePyramidAutoencoder(BaseLightningModule):
             c = (a - probability).detach()
             mask = c + probability
         else:
-            mask = torch.bernoulli(probability).detach()
-            # mask = torch.where(probability > 0.5, 1., 0.)
+            # mask = torch.bernoulli(probability).detach()
+            print('here')
+            mask = torch.where(probability > 0.1, 1., 0.)
         return mask, probability
 
     @staticmethod
