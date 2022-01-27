@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.nn.functional
 import torch
 import numpy as np
+import torchvision.transforms as transforms
 from kapture_localization.matching.matching import MatchPairNnTorch
 
 
@@ -100,8 +101,9 @@ class SparseFeaturePyramidAutoencoder(BaseLightningModule):
             mask = c + probability
         else:
             # mask = torch.bernoulli(probability).detach()
-            print('here')
-            mask = torch.where(probability > 0.1, 1., 0.)
+            # convert_tensor = transforms.ToTensor()
+            # probability = convert_tensor(np.random.sample((x.shape[3], x.shape[3])))[None]
+            mask = torch.where(probability > 0.5, 1., 0.)
         return mask, probability
 
     @staticmethod
