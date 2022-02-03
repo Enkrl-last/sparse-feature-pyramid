@@ -103,8 +103,8 @@ class SparseFeaturePyramidAutoencoder(BaseLightningModule):
             # mask = torch.bernoulli(probability).detach()
             # convert_tensor = transforms.ToTensor()
             # probability = convert_tensor(np.random.sample((x.shape[3], x.shape[3])))[None]
-            mask = torch.where(probability > 0.5, 1., 0.)
-        return mask, probability
+            mask = torch.where(probability > 0.0, 1., 0.)
+        return probability, probability
 
     @staticmethod
     def predict_kl_loss(x):
